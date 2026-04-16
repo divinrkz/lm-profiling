@@ -1,0 +1,45 @@
+[project]
+name = "eecs-148b-hw2"
+version = "0.1.0"
+description = "EE/CS 148B HW 2: Profiling and Reasoning"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "basics",
+    "datasets>=3.0.0",
+    "flash-attn==2.7.4.post1",
+    "humanfriendly",
+    "latex2sympy2-extended",
+    "math-verify[antlr4-13-2]>=0.7.0",
+    "matplotlib",
+    "numpy",
+    "pandas>=2",
+    "pylatexenc==2.10",
+    "pytest>=8",
+    "sympy",
+    "torch",
+    "tqdm>=4.67.1",
+    "transformers>=4.50.0",
+    "typer>=0.15.4",
+    "vllm==0.7.2",
+    "wandb>=0.19.8",
+]
+
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["systems", "alignment"]
+
+[tool.uv]
+package = true
+no-build-isolation-package = ["flash-attn"]
+
+[tool.uv.sources]
+basics = { path = "./basics", editable = true }
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "WARNING"
+addopts = "-s"
