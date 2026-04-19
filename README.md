@@ -15,10 +15,9 @@ This repository contains the starter code for EE/CS 148B HW 2.
 
 ## Setup
 
-We use `uv` to manage dependencies. We recommend installing `flash-attn` **after** the other packages.
+We use `uv` to manage dependencies. To set up the repository environment, run:
 
 ```sh
-uv sync --no-install-package flash-attn
 uv sync
 ```
 
@@ -29,6 +28,7 @@ The outer `pyproject.toml` points at the local `basics` package, so `uv run ...`
 - The public tests are self-contained; they use lightweight toy fixtures rather than downloading a pretrained model.
 - The profiling and evaluation scripts in Section 2 and Section 3.1-3.2 are scaffolded but intentionally unimplemented.
 - The provided reward utility in `alignment/rewards.py` expects model outputs to include `<answer>...</answer>` tags, matching the prompts in the handout.
+- The Colab notebook for Section 3 installs GPU-only packages such as `vllm` separately; they are intentionally not part of the base `uv sync` environment.
 
 ## Submission
 
