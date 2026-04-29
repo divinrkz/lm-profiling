@@ -1,12 +1,17 @@
 from __future__ import annotations
 
 import argparse
+import statistics
+import timeit
 from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Optional
+from basics.model import BasicsTransformerLM
+import torch.cuda.nvtx as nvtx
 
 import torch
+import torch.nn.functional as F
 
 
 @dataclass(frozen=True)
@@ -22,7 +27,6 @@ MODEL_SPECS: dict[str, ModelSpec] = {
     "medium": ModelSpec(d_model=768, d_ff=3072, num_layers=12, num_heads=12),
     "large": ModelSpec(d_model=1024, d_ff=4096, num_layers=24, num_heads=16),
 }
-
 
 @dataclass(frozen=True)
 class BenchmarkConfig:
@@ -57,12 +61,29 @@ def build_argparser() -> argparse.ArgumentParser:
 
 def build_model(config: BenchmarkConfig) -> torch.nn.Module:
     """Instantiate the staff Basics transformer for the requested model size."""
-    raise NotImplementedError
+    rope_theta = 10000.0
+    model_spec = MODEL_SPECS[config.model_size]
+    model = BasicsTransformerLM(
+        vocab_size=config.vocab_size,
+        context_length=config.context_length,
+        d_model=model_spec.d_model,
+        num_layers=model_spec.num_layers,
+        num_heads=model_spec.num_heads,
+        d_ff=model_spec.d_ff,  
+        rope_theta=rope_theta,
+    )
+    return model
 
 
 def make_random_batch(config: BenchmarkConfig, device: torch.device) -> torch.Tensor:
     """Construct a random token batch for benchmarking and profiling."""
-    raise NotImplementedError
+    return torch.randint(
+        low=0,
+        high=config.vocab_size,
+        size=(config.batch_size, config.context_length),
+        dtype=torch.long,
+        device=device,
+    )
 
 
 def run_single_step(
@@ -70,14 +91,87 @@ def run_single_step(
     batch: torch.Tensor,
     mode: Literal["forward", "forward-backward", "train-step"],
     autocast_context,
+    optimizer: Optional[torch.optim.Optimizer] = None,
 ) -> None:
     """Execute one benchmark step and synchronize CUDA before returning."""
-    raise NotImplementedError
+    if mode == "train-step":
+        assert optimizer is not None, "train-step mode requires an optimizer"
+        optimizer.zero_grad(set_to_none=True)
+
+    with autocast_context:
+        logits = model(batch)
+        if mode != "forward":
+            shift_logits = logits[..., :-1, :].contiguous()
+            shift_targets = batch[..., 1:].contiguous()
+            loss = F.cross_entropy(
+                shift_logits.reshape(-1, shift_logits.size(-1)),
+                shift_targets.reshape(-1),
+            )
+
+    if mode in ("forward-backward", "train-step"):
+        loss.backward()
+
+    if mode == "train-step":
+        optimizer.step()
+
+    torch.cuda.synchronize()
 
 
 def benchmark_model(config: BenchmarkConfig) -> dict[str, float]:
     """Run warmup steps followed by timed measurement steps."""
-    raise NotImplementedError
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    model = build_model(config).to(device)
+    if config.compile_model:
+        model = torch.compile(model)
+    if config.mode == "train-step":
+        model.train()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
+    else:
+        if config.mode == "forward":
+            model.eval()
+        else:
+            model.train()
+        optimizer = None
+
+    batch = make_random_batch(config, device)
+    autocast_context = make_autocast_context(config.use_bf16)
+
+    grad_context = torch.no_grad() if config.mode == "forward" else nullcontext()
+
+    with grad_context:
+        for _ in range(config.warmup_steps):
+            run_single_step(model, batch, config.mode, autocast_context, optimizer)
+
+        step_times: list[float] = []
+        with nvtx.range("measure"):
+            for i in range(config.measure_steps):
+                with nvtx.range(f"step_{i}"):
+                    start = timeit.default_timer()
+                    run_single_step(model, batch, config.mode, autocast_context, optimizer)
+                    end = timeit.default_timer()
+                    step_times.append(end - start)
+
+    mean_s = statistics.fmean(step_times)
+    stdev_s = statistics.stdev(step_times) if len(step_times) > 1 else 0.0
+    results = {
+        "mean_step_s": mean_s,
+        "stdev_step_s": stdev_s,
+        "min_step_s": min(step_times),
+        "max_step_s": max(step_times),
+        "total_s": sum(step_times),
+        "steps_per_s": 1.0 / mean_s if mean_s > 0 else float("inf"),
+    }
+
+    print(
+        f"[{config.model_size} | {config.mode} | "
+        f"ctx={config.context_length} bs={config.batch_size}] "
+        f"mean={mean_s * 1e3:.3f} ms  std={stdev_s * 1e3:.3f} ms  "
+        f"min={results['min_step_s'] * 1e3:.3f} ms  "
+        f"max={results['max_step_s'] * 1e3:.3f} ms  "
+        f"({config.measure_steps} steps after {config.warmup_steps} warmup)"
+    )
+    return results
 
 
 def annotated_scaled_dot_product_attention(*args, **kwargs):
