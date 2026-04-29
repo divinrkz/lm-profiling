@@ -143,6 +143,10 @@ def benchmark_model(config: BenchmarkConfig) -> dict[str, float]:
         for _ in range(config.warmup_steps):
             run_single_step(model, batch, config.mode, autocast_context, optimizer)
 
+        # Start memory recording AFTER warmup so the snapshot reflects
+        # steady-state allocation behaviour, not one-time setup.
+        maybe_start_memory_history(config.use_memory_profiler)
+
         step_times: list[float] = []
         with nvtx.range("measure"):
             for i in range(config.measure_steps):
@@ -151,6 +155,16 @@ def benchmark_model(config: BenchmarkConfig) -> dict[str, float]:
                     run_single_step(model, batch, config.mode, autocast_context, optimizer)
                     end = timeit.default_timer()
                     step_times.append(end - start)
+
+        snapshot_name = (
+            f"memory_{config.model_size}_{config.mode}"
+            f"_ctx{config.context_length}_bs{config.batch_size}"
+            f"_{'bf16' if config.use_bf16 else 'fp32'}.pickle"
+        )
+        maybe_dump_memory_snapshot(
+            config.use_memory_profiler,
+            config.output_dir / snapshot_name,
+        )
 
     mean_s = statistics.fmean(step_times)
     stdev_s = statistics.stdev(step_times) if len(step_times) > 1 else 0.0
@@ -181,12 +195,20 @@ def annotated_scaled_dot_product_attention(*args, **kwargs):
 
 def maybe_start_memory_history(enabled: bool) -> None:
     if enabled:
-        raise NotImplementedError
+        if not torch.cuda.is_available():
+            print("[memory profiler] CUDA not available; skipping.")
+            return
+        torch.cuda.memory._record_memory_history(max_entries=1_000_000)
 
 
 def maybe_dump_memory_snapshot(enabled: bool, output_path: Path) -> None:
     if enabled:
-        raise NotImplementedError
+        if not torch.cuda.is_available():
+            return
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        torch.cuda.memory._dump_snapshot(str(output_path))
+        torch.cuda.memory._record_memory_history(enabled=None)
+        print(f"[memory profiler] snapshot written to {output_path}")
 
 
 def make_autocast_context(use_bf16: bool):
