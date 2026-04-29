@@ -1,6 +1,4 @@
-# EE/CS 148B HW 2: Profiling and Reasoning
-
-This repository contains the starter code for EE/CS 148B HW 2.
+# Profiling and Reasoning
 
 ## Repository Layout
 
