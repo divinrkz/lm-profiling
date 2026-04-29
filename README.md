@@ -28,12 +28,4 @@ The outer `pyproject.toml` points at the local `basics` package, so `uv run ...`
 - The provided reward utility in `alignment/rewards.py` expects model outputs to include `<answer>...</answer>` tags, matching the prompts in the handout.
 - The Colab notebook for Section 3 installs GPU-only packages such as `vllm` separately; they are intentionally not part of the base `uv sync` environment.
 
-## Submission
 
-Run:
-
-```sh
-bash prepare_submission.sh
-```
-
-This runs the public tests and creates `eecs-148b-hw2-submission.zip`.
