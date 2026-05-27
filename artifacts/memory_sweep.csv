@@ -1,0 +1,13 @@
+model,mode,context_length,batch_size,precision,peak_alloc_mib,peak_reserved_mib
+large,forward,128,4,fp32,1656.35,1682.00
+large,train-step,128,4,fp32,8137.25,8198.00
+large,forward,128,4,bf16,2425.12,2444.00
+large,train-step,128,4,bf16,8116.94,8400.00
+large,forward,256,4,fp32,1708.52,1778.00
+large,train-step,256,4,fp32,8729.74,8758.00
+large,forward,256,4,bf16,2438.39,2486.00
+large,train-step,256,4,bf16,8161.17,8258.00
+large,forward,512,4,fp32,1920.84,2034.00
+large,train-step,512,4,fp32,14132.41,14648.00
+large,forward,512,4,bf16,2594.84,2658.00
+large,train-step,512,4,bf16,11843.22,12040.00

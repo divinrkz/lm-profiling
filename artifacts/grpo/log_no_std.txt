@@ -1,0 +1,10 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+
+============================================================
+Starting GRPO run: use_std_normalization=False  (no_std)
+  device=cuda  model=Qwen/Qwen2.5-Math-1.5B
+  steps=50  batch=4  group=8
+  lr=1e-06  cliprange=0.2  max_new_tokens=512
+============================================================
+Loading weights:   0%|          | 0/338 [00:00<?, ?it/s]Loading weights: 100%|██████████| 338/338 [00:00<00:00, 4608.60it/s]

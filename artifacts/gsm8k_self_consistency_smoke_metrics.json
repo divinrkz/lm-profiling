@@ -1,0 +1,14 @@
+{
+  "n": 100,
+  "k": 5,
+  "vote_accuracy": 0.0,
+  "vote_format_accuracy": 0.04,
+  "per_sample_accuracy": 0.0,
+  "per_sample_format_accuracy": 0.0,
+  "tie_rate": 0.0,
+  "no_parse_rate": 0.96,
+  "mode_count_distribution": {
+    "0": 96,
+    "1": 4
+  }
+}

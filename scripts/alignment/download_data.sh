@@ -1,0 +1,1 @@
+uv run python datasets/gsm8k.py --split train --config main

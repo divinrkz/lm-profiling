@@ -1,0 +1,11 @@
+{
+  "n": 1319,
+  "accuracy": 0.0,
+  "format_accuracy": 0.0,
+  "answer_given_format": 0.0,
+  "counts": {
+    "correct": 0,
+    "format_only": 0,
+    "neither": 1319
+  }
+}

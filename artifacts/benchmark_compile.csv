@@ -1,0 +1,5 @@
+model,mode,compile,context_length,batch_size,mean_ms,std_ms,min_ms,max_ms
+large,forward,vanilla,128,4,98.636,4.279,93.998,106.598
+large,forward,compiled,128,4,46.812,2.036,45.128,51.646
+large,train-step,vanilla,128,4,261.618,6.670,257.094,279.316
+large,train-step,compiled,128,4,204.978,3.711,202.233,214.456

@@ -1,0 +1,15 @@
+basics
+datasets>=3.0.0
+humanfriendly
+latex2sympy2-extended
+math-verify[antlr4-13-2]>=0.7.0
+matplotlib
+numpy
+pandas>=2
+pylatexenc==2.10
+pytest>=8
+sympy
+tqdm>=4.67.1
+transformers>=4.50.0
+typer>=0.15.4
+wandb>=0.19.8
